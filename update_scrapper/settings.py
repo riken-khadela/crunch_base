@@ -353,31 +353,35 @@ class main_setting:
         organizations_to_update = list(crunch_organization_details.aggregate(pipeline))
         print('len:',len(organizations_to_update))
         if not organizations_to_update :
-            where_condition = {"update_first": 1}
-            pipeline = [{"$match": where_condition}, {"$sample": {"size": numberofrecords}}]
-            update_first_urls = list(crunch_raw_urls.aggregate(pipeline))
-        
-        if update_first_urls:
-            org_urls = [url_doc["url"] for url_doc in update_first_urls]
-            organizations_to_update = list(crunch_organization_details.find(
-                {
-                    "organization_url": {"$in": org_urls},
-                    "$or": [
-                        {"updated_at": {"$lt": one_month_ago}},
-                        {"updated_at": {"$exists": False}},
-                        {"is_updated": 0}
-                    ]
-                }
-            ))
             
-            bulk_operations.extend(
-                UpdateOne(
-                    {"_id": url_doc["_id"]},
-                    {"$set": {"update_first": 0, "processed_at": current_time}}
-                )
-                for url_doc in update_first_urls
-            )
-
+            for _ in range(5):
+                    
+                where_condition = {"update_first": 1}
+                pipeline = [{"$match": where_condition}, {"$sample": {"size": numberofrecords}}]
+                update_first_urls = list(crunch_raw_urls.aggregate(pipeline))
+                
+                if update_first_urls:
+                    org_urls = [url_doc["url"] for url_doc in update_first_urls]
+                    organizations_to_update = list(crunch_organization_details.find(
+                        {
+                            "organization_url": {"$in": org_urls},
+                            "$or": [
+                                {"updated_at": {"$lt": one_month_ago}},
+                                {"updated_at": {"$exists": False}},
+                                {"is_updated": 0}
+                            ]
+                        }
+                    ))
+                    
+                    bulk_operations.extend(
+                        UpdateOne(
+                            {"_id": url_doc["_id"]},
+                            {"$set": {"update_first": 0, "processed_at": current_time}}
+                        )
+                        for url_doc in update_first_urls
+                    )
+                if numberofrecords <= len(organizations_to_update) : break
+                
         remaining_slots = numberofrecords - len(organizations_to_update)
         
         if remaining_slots > 0:
