@@ -2,7 +2,7 @@ from update_scrapper.summery import SUMMARY
 from update_scrapper.finance import FINANCIAL
 from update_scrapper.news import NEWS
 import update_scrapper.settings as cf
-import threading, os, time
+import threading, os, time, random
 from datetime import datetime
 from update_scrapper.investment import INVESTMENT
 from logger import CustomLogger
@@ -13,8 +13,10 @@ number_of_records = 20
 number_of_threads = 4
 
 class MainUpdateScrapping1(SUMMARY, FINANCIAL, NEWS, INVESTMENT, cf.main_setting):
-    def __init__(self):
+    def __init__(self, number_of_records = random.randint(15, 35), number_of_threads = 3):
         super().__init__()
+        self.number_of_records = number_of_records
+        self.number_of_threads = number_of_threads
         self.logger = CustomLogger(log_file_path="log/update.log")
         self.session_manager = CatchCookies()
 
@@ -65,7 +67,7 @@ class MainUpdateScrapping1(SUMMARY, FINANCIAL, NEWS, INVESTMENT, cf.main_setting
                 self.logger.error(f"[ERROR] Exception in thread: {e}")
                 return None, None
 
-        with ThreadPoolExecutor(max_workers=number_of_threads) as executor:
+        with ThreadPoolExecutor(max_workers=self.number_of_threads) as executor:
             future_to_data = {executor.submit(process_and_append, d['organization_url'], d): d for d in dicts}
             for future in as_completed(future_to_data):
                 try:
@@ -87,16 +89,16 @@ class MainUpdateScrapping1(SUMMARY, FINANCIAL, NEWS, INVESTMENT, cf.main_setting
         while True:
             try:
                 self.session_manager.refresh_session()
-                dicts = self.read_crunch_details(number_of_records)
+                dicts = self.read_crunch_details(self.number_of_records)
                 if not dicts:
                     for _ in range(10):
                         self.logger.info("No documents found, sleeping...")
                         time.sleep(60)
-                        dicts = self.read_crunch_details(number_of_records)
+                        dicts = self.read_crunch_details(self.number_of_records)
                         if dicts:
                             break
                 self.thread_logic(dicts)
-                self.logger.log(f"Wating for a minitue restart the process of scrapping after completed scrapping a batch size of {number_of_records}")
+                self.logger.log(f"Wating for a minitue restart the process of scrapping after completed scrapping a batch size of {self.number_of_records}")
                 time.sleep(60)
             except Exception as e:
                 self.logger.error(f"[ERROR] Exception in main thread loop: {e}")

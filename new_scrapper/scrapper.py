@@ -8,16 +8,16 @@ from new_scrapper.investment import INVESTMENT
 from logger import CustomLogger
 from catch_coockies import CatchCookies
 
-import threading, os, time
+import threading, os, time, random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-threads_num = 4
-number_of_records = 100
 
 
 class MainNewScrapping(SUMMARY, FINANCIAL, NEWS, INVESTMENT, cf.main_setting):
-    def __init__(self):
+    def __init__(self, number_of_records = random.randint(15, 35), number_of_threads = 3):
         super().__init__()
+        self.number_of_records = number_of_records
+        self.number_of_threads = number_of_threads
         self.session_manager = CatchCookies()
         
         self.logger = CustomLogger(log_file_path="log/update.log")
@@ -68,7 +68,7 @@ class MainNewScrapping(SUMMARY, FINANCIAL, NEWS, INVESTMENT, cf.main_setting):
                 self.logger.error(f"[ERROR] Exception in thread: {e}")
                 return None, None
 
-        with ThreadPoolExecutor(max_workers=threads_num) as executor:
+        with ThreadPoolExecutor(max_workers=self.number_of_threads) as executor:
             future_to_data = {executor.submit(process_and_append, d['organization_url'], d): d for d in dicts}
             for future in as_completed(future_to_data):
                 try:
@@ -92,12 +92,12 @@ class MainNewScrapping(SUMMARY, FINANCIAL, NEWS, INVESTMENT, cf.main_setting):
         while True:
             try:
                 self.session_manager.refresh_session()
-                dicts = self.read_crunch_details_new(number_of_records)
+                dicts = self.read_crunch_details_new(self.number_of_records)
                 if not dicts:
                     for _ in range(10):
                         self.logger.info("No documents found, sleeping...")
                         time.sleep(60)
-                        dicts = self.read_crunch_details_new(number_of_records)
+                        dicts = self.read_crunch_details_new(self.number_of_records)
                         if dicts:
                             break
                 self.thread_logic(dicts)
