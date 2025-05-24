@@ -7,7 +7,7 @@ def run_MainUpdateScrapping1():
     scrapper = MainUpdateScrapping1()
     scrapper.thread_function()
 
-def run_scrapper2():
+def run_MainNewScrapping():
     scrapper = MainNewScrapping()
     scrapper.thread_function()
 
@@ -15,7 +15,7 @@ if __name__ == "__main__":
     collect_page_details()
     
     t1 = threading.Thread(target=run_MainUpdateScrapping1)
-    t2 = threading.Thread(target=run_scrapper2)
+    t2 = threading.Thread(target=run_MainNewScrapping)
 
     t1.start()
     t2.start()

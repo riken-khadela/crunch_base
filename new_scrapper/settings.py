@@ -122,6 +122,8 @@ def check_and_reset_keywords():
 
 # Function Used in crunch_link_scraper
 def read_crunch_keywords():
+    logger = CustomLogger(log_file_path="log/new_scrapping.log")
+    
     bulk_operations = []
     numberofrecords = 1600
     where_condition = {"status":0}
@@ -136,7 +138,7 @@ def read_crunch_keywords():
             result = child_keywords.bulk_write(bulk_operations)
         
     except BulkWriteError as e:
-        print(e.details)
+        logger.error(e.details)
         
     # update each document with a new value
     return random_documents
@@ -203,6 +205,7 @@ def read_crunch_urls(numberofrecords):
 
 # Function Used in crunch_link_scraper        
 #17-09-2023 made the necessary changes.
+
 def insert_multiple_urls_from_google(documents):
     # set a unique index on the collection
     print("total records found: " +str(len(documents)))
